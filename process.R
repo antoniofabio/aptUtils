@@ -1,5 +1,7 @@
 #!/usr/bin/env Rscript
-suppressPackageStartupMessages(library("optparse"))
+if(!require("optparse", quietly=TRUE)) {
+  stop("the 'optparse' package is needed in order to run this script")
+}
 
 option_list <-
   list(
@@ -11,13 +13,19 @@ option_list <-
        make_option("--rma", action="store_true", default=TRUE,
                    help="do RMA preprocessing [default]"),
        make_option("--no-rma", action="store_false", dest="rma",
-                   help="skip RMA preprocessing"))
+                   help="skip RMA preprocessing (not yet implemented)"),
+       make_option(c("-o", "--output-file"), default="X.RData",
+                   help="output RData file name [default: X.RData]"),
+       make_option("--keep-logs", action="store_true", default=FALSE,
+                   help="keep intermediate output files in the current working directory [default: FALSE]")
+       )
 
 parser <- OptionParser(usage="%prog [options] cel-files", option_list=option_list)
 arguments <- parse_args(parser, positional_arguments = TRUE)
 opt <- arguments$options
 
-if(length(arguments$args)==0) {
+celFiles <- arguments$args
+if(length(celFiles)==0) {
   print_help(parser)
   quit("no")
 }
@@ -28,26 +36,17 @@ if(is.null(opt$cdf)) {
   stop("you must specify a CDF file (-d option)")
 }
 
+outputDir <- if(opt$`keep-logs`) . else tempdir()
 cmd <- paste("apt-probeset-summarize",
-             if(opt$rma) "-a rma-sketch -o rma_output" else "",
+             if(opt$rma) paste("-a rma-sketch -o", outputDir) else "",
              "-d", opt$cdf,
-             paste(arguments$args, collapse=" "))
+             paste(celFiles, collapse=" "))
 print(cmd)
 
-if(FALSE) {
-fileName <- commandArgs(trailingOnly=TRUE)
-
-upn <- read.table("petacc3-phase1-list_of_244.dat", as.is=TRUE)$V1[-1]
-map1 <- read.csv("../vlad_normalized/Sample-Chip-mapping.csv", as.is=TRUE)
-map <- map1$ArrayNameUPDATE
-names(map) <- map1$Patient.ID
-files <- file.path("/export/scratch/PETACC3/phase1/petacc3-phase1-cel",
-                   paste(map[upn], ".CEL", sep=""))
-writeLines(c('cel_files', files), "celFiles.txt")
-
-system("apt-probeset-summarize -a rma-sketch --write-sketch -d ../ADXCRCG2a520319.cdf -o rma_output --cel-files celFiles.txt")
-
-X <- read.delim("rma_output/rma-sketch.summary.txt", sep="\t",
-                comment.char="", skip=46+length(files))
+txtOut <- file.path(outputDir, "rma-sketch.summary.txt")
+system(cmd)
+txtTemp <- tempfile()
+system(paste("grep --invert-match ^#%.*", txtOut, ">", txtTemp))
+X <- read.delim(txtTemp, sep="\t", comment.char="", as.is=TRUE)
+X <- structure(t(as.matrix(X[,-1])), dimnames=list(colnames(X)[-1], X[,1]))
 save(X, file="X.RData")
-}
