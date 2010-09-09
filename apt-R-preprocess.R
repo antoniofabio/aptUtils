@@ -5,19 +5,14 @@ if(!suppressPackageStartupMessages(require("optparse", quietly=TRUE))) {
 
 option_list <-
   list(
-       make_option(c("-v", "--verbose"), action="store_true", default=TRUE,
-                   help="Print extra output [default]"),
-       make_option(c("-q", "--quietly"), action="store_false",
-                   dest="verbose", help="Print little output"),
        make_option(c("-d", "--cdf"), help="CDF file name"),
-       make_option("--rma", action="store_true", default=TRUE,
-                   help="do RMA preprocessing [default]"),
+       make_option(c("-q", "--load-quantiles-from"), help="load quantiles from specified file"),
        make_option("--no-rma", action="store_false", dest="rma",
                    help="skip RMA preprocessing (not yet implemented)"),
        make_option(c("-o", "--output-file"), default="X.RData",
                    help="output RData file name [default: X.RData]"),
-       make_option("--keep-logs", action="store_true", default=FALSE,
-                   help="keep intermediate output files in the current working directory [default: FALSE]")
+       make_option("--output-folder", default=".",
+                   help="output folder where to store logs and extra analysis results [default: current directory]")
        )
 
 parser <- OptionParser(usage="%prog [options] cel-files", option_list=option_list)
@@ -30,18 +25,20 @@ if(length(celFiles)==0) {
   quit("no")
 }
 
-print(opt)
-
 if(is.null(opt$cdf)) {
   stop("you must specify a CDF file (-d option)")
 }
 
-outputDir <- if(opt$`keep-logs`) . else tempdir()
-cmd <- paste("apt-probeset-summarize",
-             if(opt$rma) paste("-a rma-sketch -o", outputDir) else "",
+outputDir <- opt$`output-folder`
+cmd <- paste("apt-probeset-summarize -a rma-sketch -o", outputDir,
+             if(!is.null(opt$`load-quantiles-from`)) paste("--target-sketch", opt$`load-quantiles-from`) else "--write-sketch",
              "-d", opt$cdf,
              paste(celFiles, collapse=" "))
-print(cmd)
+aptVersion <- gsub("^version: apt-(.*?) .*", "\\1",
+                   system("apt-probeset-summarize --version", intern=TRUE))
+message("using Affymetrix Power Tools, version ", aptVersion)
+message("console command:")
+message(sQuote(cmd))
 
 txtOut <- file.path(outputDir, "rma-sketch.summary.txt")
 system(cmd)
