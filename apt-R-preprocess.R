@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-if(!require("optparse", quietly=TRUE)) {
+if(!suppressPackageStartupMessages(require("optparse", quietly=TRUE))) {
   stop("the 'optparse' package is needed in order to run this script")
 }
 
