@@ -7,6 +7,8 @@ option_list <-
   list(make_option(c("-d", "--cdf"), help="CDF file name"),
        make_option(c("-o", "--output-file"), default="X.bin",
                    help="output RData file name [default: X.bin]"),
+       make_option(c("-a", "--annot"), default="probesets.txt",
+                   help="probesets annotation file"),
        make_option(c("-p", "--progress"), action="store_true",
                    default=FALSE, help="show progress [default: FALSE]"))
 
@@ -37,7 +39,9 @@ for(i in seq_along(celFiles)) {
   message("shell command: `", cmd, "`")
   system(cmd)
   y <- read.delim(tmpTxtFiles[i], sep="\t", colClasses=c(rep("NULL", 7), "integer"))[[1]]
-  unlink(tmpTxtFiles[i])
+  if(i>1) {
+    unlink(tmpTxtFiles[i])
+  }
   writeBin(y, tmpBinFiles[i], size=2, endian="little")
 }
 if(verbose) {
@@ -45,3 +49,10 @@ if(verbose) {
 }
 
 system(sprintf("cat %s > %s", paste(tmpBinFiles, collapse=" "), opt$`output-file`))
+
+d <- read.delim(tmpTxtFiles[1], sep="\t", as.is=TRUE)
+unlink(tmpTxtFiles[1])
+probeset_id <- unique(d$probeset_id)
+probeset_len <- tapply(d$probeset_id, d$probeset_id, length)
+df <- data.frame(probeset_id=probeset_id, probeset_len=probeset_len)
+write.csv(df, file=opt$annot, row.names=FALSE)
