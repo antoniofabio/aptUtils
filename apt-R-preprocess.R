@@ -6,6 +6,7 @@ if(!suppressPackageStartupMessages(require("optparse", quietly=TRUE))) {
 option_list <-
   list(
        make_option(c("-d", "--cdf"), help="CDF file name"),
+       make_option(c("--files-list"), help="txt file containing the path to the files to be preprocessed"),
        make_option(c("-l", "--load-quantiles"), action="store_true", default=FALSE,
                    help="load previously computed quantiles, don't recompute them [default: FALSE]"),
        make_option(c("-q", "--quantiles-file"), default="quantiles.txt",
@@ -22,7 +23,11 @@ parser <- OptionParser(usage="%prog [options] cel-files", option_list=option_lis
 arguments <- parse_args(parser, positional_arguments = TRUE)
 opt <- arguments$options
 
-celFiles <- arguments$args
+if(!is.null(opt$`files-list`)) {
+  celFiles <- readLines(opt$`files-list`)
+} else {
+  celFiles <- arguments$args
+}
 if(length(celFiles)==0) {
   print_help(parser)
   quit("no")
