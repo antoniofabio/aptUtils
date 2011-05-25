@@ -56,7 +56,7 @@ txtOut <- file.path(outputDir, "rma-sketch.summary.txt")
 system(cmd)
 txtTemp <- tempfile()
 system(paste("grep --invert-match ^#%.*", txtOut, ">", txtTemp))
-X <- read.delim(txtTemp, sep="\t", comment.char="", as.is=TRUE)
+X <- read.delim(txtTemp, sep="\t", comment.char="", as.is=TRUE, check.names=FALSE)
 X <- structure(t(as.matrix(X[,-1])), dimnames=list(colnames(X)[-1], X[,1]))
 save(X, file="X.RData")
 
