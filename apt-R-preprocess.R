@@ -44,7 +44,7 @@ if(outputDir=="") {
 cmd <- paste("apt-probeset-summarize -a rma-sketch -o", outputDir,
              if(opt$`load-quantiles`) paste("--target-sketch", opt$`quantiles-file`) else "--write-sketch",
              "-d", opt$cdf,
-             paste(celFiles, collapse=" "))
+             paste(shQuote(celFiles), collapse=" "))
 aptVersion <- gsub("^version: apt-(.*?) .*", "\\1",
                    system("apt-probeset-summarize --version", intern=TRUE))
 message("using Affymetrix Power Tools, version ", aptVersion)
